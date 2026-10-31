@@ -665,7 +665,6 @@ function settings() {
   <section class="card settings-card"><h3>${esc(t('app'))}</h3>
     ${installEvt ? `<button class="btn" data-act="install">${esc(t('install'))}</button>` : standalone() ? `<p class="hint">${esc(t('installed'))}</p>` : `<p class="hint">${esc(ios ? t('ios_add') : t('install_hint'))}</p>`}
     <p><a href="#/safety">${esc(t('food_safety'))} →</a></p>
-    <p><a href="test.html">${esc(t('self_test'))} →</a></p>
     <p class="hint">${esc(t('sources'))}</p>
   </section>`;
 }

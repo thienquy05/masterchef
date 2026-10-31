@@ -1,5 +1,5 @@
 // App-shell cache. Bump VERSION on every deploy so phones pick up the new files.
-const VERSION = 'mc-2026-11-01-1';
+const VERSION = 'mc-2026-11-01-2';
 const SHELL = ['./', 'index.html', 'style.css', 'app.js', 'core.js', 'store.js', 'data.js', 'i18n.js', 'manifest.webmanifest',
   'icons/192.png', 'icons/512.png', 'icons/apple-touch-icon-180.png'];
 
