@@ -699,6 +699,10 @@ function tryConnect(text) {
   if (!c) { toast(t('bad_link')); return render(); }
   if (cur && cur.u === c.u && cur.k === c.k) { toast(t('connected')); return render(); }
   if (cur && !confirm(t('confirm_switch', { n: S.pending() }))) return render();
+  // never join a Sheet silently: a crafted link could point at someone else's deployment and receive this phone's data
+  const local = ['Recipes', 'Storage', 'Shopping'].reduce((n, tb) => n + S.rows(tb).length, 0);
+  const sid = c.u.split('/s/')[1].split('/')[0];
+  if (!cur && !confirm(t('confirm_join', { id: '…' + sid.slice(-8), n: local }))) return render();
   if (cur) { S.disconnect(); S.resetLocal(); }
   S.prefs.set('localOnly', false);
   S.connect(c).then(() => toast(S.state.status === 'ok' ? t('connected') : t('sync_error', { e: S.state.error })));

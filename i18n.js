@@ -92,6 +92,7 @@ const en = {
   err_af: 'Enter the air-fryer temperature and minutes, or untick Air-fryer recipe.',
   confirm_switch: 'Switch this phone to a different family? Its current copy will be cleared ({n} unsynced change(s) lost; the old Sheet keeps everything else).',
   rejected: 'The Sheet refused a change (too large or invalid). It was skipped.',
+  confirm_join: 'Join this family Sheet (script {id})? Only continue if the link came from your family. {n} item(s) saved on this phone will be uploaded to it.',
 };
 
 const vi = {
@@ -187,6 +188,7 @@ const vi = {
   err_af: 'Nhập nhiệt độ và số phút cho nồi chiên, hoặc bỏ chọn Món nồi chiên không dầu.',
   confirm_switch: 'Chuyển máy này sang gia đình khác? Bản lưu hiện tại sẽ bị xóa ({n} thay đổi chưa đồng bộ sẽ mất; Sheet cũ vẫn giữ phần còn lại).',
   rejected: 'Sheet từ chối một thay đổi (quá lớn hoặc không hợp lệ). Đã bỏ qua.',
+  confirm_join: 'Tham gia Sheet gia đình này (script {id})? Chỉ tiếp tục nếu đường dẫn đến từ người nhà. {n} mục đang lưu trên máy sẽ được tải lên.',
 };
 
 export const D = { en, vi };
