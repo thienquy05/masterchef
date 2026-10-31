@@ -128,7 +128,7 @@ function rotateKey() {                                                // then re
 }
 function daily() { withLock_(purge_); sendDigest(); }
 function purge_() {
-  const cut = Date.now() - 30 * DAY;
+  const cut = Date.now() - 365 * DAY;               // long enough that a phone offline for months can't resurrect a delete
   Object.keys(TABLES).forEach(n => {
     const sh = sheet_(n), v = sh.getDataRange().getValues(), di = v[0].indexOf('deleted'), ui = v[0].indexOf('updatedAt');
     for (let i = v.length - 1; i >= 1; i--) if (v[i][di] === true && Number(v[i][ui]) < cut) sh.deleteRow(i + 1);

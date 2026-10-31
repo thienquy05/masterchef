@@ -85,6 +85,9 @@ eq(C.classify('salt', '', null), 'toTaste', 'no qty'); eq(C.classify('Prague pow
 eq(C.classify('unsalted butter', 'tbsp'), 'normal', 'unsalted butter'); eq(C.classify('peanut butter', 'tbsp'), 'normal', 'peanut butter');
 eq(C.classify('chicken stock', 'cup'), 'liquid', 'stock'); eq(C.classify('olive oil', 'tbsp'), 'oil', 'oil');
 eq(C.classify('oil for frying', 'cup'), 'fixed', 'frying oil');
+eq(C.classify('himalayan pink salt', 'tsp'), 'salt', 'pink salt is salt'); eq(C.isCure('pink curing salt'), true, 'pink curing salt');
+eq(C.isCure('Prague powder #1'), true, 'prague'); eq(C.isCure('cured ham'), false, 'cured ham is not a cure');
+eq(C.fracStr(1.375), '1.375', 'no ⅜ glyph keeps value'); eq(C.fracStr(1.5), '1½', 'glyph');
 
 // density
 eq(C.density('peanut butter').gPerCup, 270, 'peanut butter beats butter');

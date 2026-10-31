@@ -175,7 +175,8 @@ export function flush() {
       else if (queue.length) setTimeout(flush, Math.min(300000, 30000 * ++retry));
     } finally {
       flushing = null;
-      if (state.status === 'ok') { retry = 0; if (queue.length) setTimeout(flush, 0); } // edits made during the final sync
+      if (conn && conn !== c) setTimeout(flush, 0);  // switched family mid-request: sync the new one
+      else if (state.status === 'ok') { retry = 0; if (queue.length) setTimeout(flush, 0); } // edits made during the final sync
       emit('status');
     }
   })();
@@ -189,6 +190,12 @@ const applyLocalTo = d => op => {
 /** Wipe local data and queue (used by Disconnect + "clear this device"). */
 export function resetLocal() { db = seed(); queue = []; persist(); emit('data'); }
 
+// Another tab wrote: adopt its copy so this tab's next save doesn't overwrite it.
+addEventListener('storage', e => {
+  if (e.key !== 'mc_data' && e.key !== 'mc_queue' && e.key !== 'mc_conn') return;
+  db = ls.get('mc_data', null) || seed(); queue = ls.get('mc_queue', []); conn = ls.get('mc_conn', null);
+  emit('data');
+});
 addEventListener('online', () => flush());
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible' && Date.now() - (state.syncedAt || 0) > 30000) flush();

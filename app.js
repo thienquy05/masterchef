@@ -141,10 +141,13 @@ function recipeCards() {
   if (!S.rows('Recipes').length) return `<div class="empty"><p>${esc(t('no_recipes'))}</p>
     <button class="btn" data-act="samples">${esc(t('add_samples'))}</button></div>`;
   if (!withRatio.length) return `<p class="empty">${esc(t('no_match'))}</p>`;
-  return withRatio.map(({ r, h }) => `<a class="card row" href="#/recipe/${encodeURIComponent(r.id)}">
-    <div class="grow"><div class="name">${esc(r.name)}</div>
-      <div class="sub">${t('serves', { n: esc(r.servings) })}${r.af ? ' · ' + esc(t('air_fryer')) : ''}${tagsOf(r).length ? ' · ' + tagsOf(r).map(esc).join(', ') : ''}</div></div>
-    ${h.total ? `<span class="pill ${h.have === h.total ? 'ok' : h.have ? 'soon' : ''}" title="${esc(t('in_storage'))}">${h.have}/${h.total}</span>` : ''}
+  return withRatio.map(({ r, h }, n) => `<a class="card recipe-card" href="#/recipe/${encodeURIComponent(r.id)}">
+    <div class="recipe-tile tile-${n % 4}" aria-hidden="true">${esc((r.name || '?').trim().charAt(0).toLocaleUpperCase())}</div>
+    <div class="grow recipe-copy"><div class="name">${esc(r.name)}</div>
+      <div class="sub">${t('serves', { n: esc(r.servings) })}${r.af ? ' · ' + esc(t('air_fryer')) : ''}</div>
+      ${tagsOf(r).length ? `<div class="recipe-tags">${tagsOf(r).map(g => `<span class="chip static">${esc(g)}</span>`).join('')}</div>` : ''}
+      ${h.total ? `<div class="stock-line"><span>${h.have}/${h.total} ${esc(t('in_storage'))}</span><span class="stock-track" aria-hidden="true"><span style="width:${Math.round(h.have / h.total * 100)}%"></span></span></div>` : ''}
+    </div><span class="recipe-arrow" aria-hidden="true">›</span>
   </a>`).join('');
 }
 function useSoonBanner(recipes) {
@@ -190,7 +193,10 @@ function fmtIng(ing, f, r, exact) {
     return `${e.whole}${e.half ? ' ' + t('half_egg') : ''}${ing.unit ? ' ' + ing.unit : ''}`;
   }
   const q = C.scaleQty(ing, f, { exact, grainMl: grainMl(r) });
-  if (ing.class === 'ratio' && C.dimOf(ing.unit) === 'wt') return new Intl.NumberFormat(L(), { maximumFractionDigits: 1 }).format(C.toBase(q, ing.unit)) + ' g';
+  if (ing.class === 'ratio' && C.dimOf(ing.unit) === 'wt') {           // exact grams, never rounded to 0 or to ounces
+    const g = C.toBase(q, ing.unit);
+    return g > 0 && g < 0.01 ? '< 0.01 g' : new Intl.NumberFormat(L(), { maximumFractionDigits: 2 }).format(g) + ' g';
+  }
   const up = ing.class === 'ratio' || (exact && C.SUBLINEAR.has(ing.class));
   return C.fmtAmount(q, ing.unit, { system: units(), name: ing.name, up, lang: L() });
 }
@@ -204,8 +210,8 @@ function recipeView(id) {
   <div class="toolbar">${backBtn('#/recipes')}<h2 class="grow">${esc(r.name)}</h2>
     <a class="btn small" href="#/recipe/${encodeURIComponent(r.id)}/edit">${esc(t('edit'))}</a></div>
   ${tagsOf(r).length ? `<div class="chips">${tagsOf(r).map(g => `<span class="chip static">#${esc(g)}</span>`).join('')}</div>` : ''}
-  <section class="card">
-    <div class="row">
+  <section class="card scale-panel">
+    <div class="row scale-heading">
       <span class="grow">${esc(t('servings'))}</span>
       <button class="icon-btn round" data-act="sv-" aria-label="${esc(t('fewer'))}">−</button>
       <output id="svout" class="big">${esc(fmtServ(r, sv))}</output>
@@ -249,7 +255,8 @@ function scaledPart(r) {
     const mark = isWater(i.name) ? '' : st ? `<span class="mark ${st.s.status === 'expired' ? 'expired' : st.s.status === 'soon' ? 'soon' : 'ok'}" title="${esc(t('in_storage'))}: ${esc(st.i.name)}${st.s.date ? ' · ' + esc(daysText(st.s.days)) : ''}">✓</span>`
       : `<span class="mark none" title="${esc(t('missing'))}">○</span>`;
     const hint = f !== 1 && !exact && C.SUBLINEAR.has(i.class) ? `<span class="hint"> · ${esc(t('cls_' + i.class))}</span>` : '';
-    return `<li class="ing${i.isAnchor ? ' anchor' : ''}">${mark}<span class="amt">${esc(fmtIng(i, f, r, exact))}</span><span class="grow">${esc(i.name)}${hint}</span></li>`;
+    const state = isWater(i.name) ? '' : st ? (st.s.status === 'soon' || st.s.status === 'expired' ? daysText(st.s.days) : t('in_storage')) : t('missing');
+    return `<li class="ing${i.isAnchor ? ' anchor' : ''} ${st ? st.s.status : 'missing'}">${mark}<span class="amt">${esc(fmtIng(i, f, r, exact))}</span><span class="grow">${esc(i.name)}${hint}${state ? `<span class="ing-state">${esc(state)}</span>` : ''}</span></li>`;
   }).join('');
   const warn = [];
   if (Math.abs(f - 1) > 1e-6) {
@@ -390,7 +397,7 @@ function saveRecipe() {
     const qty = C.parseQty(i.qtyText);
     if (i.qtyText.trim() && qty === null) { err.textContent = t('err_qty', { v: i.qtyText }); return; }
     let cls = qty === null ? 'toTaste' : i.class === 'toTaste' ? 'normal' : i.class;
-    if (/(^| )(cure|curing|prague|nitrite|muoi diem)( |$)/.test(C.norm(i.name))) {
+    if (C.isCure(i.name)) {
       if (C.dimOf(i.unit) !== 'wt' || C.canonUnit(i.unit) !== 'g') { err.textContent = t('err_cure'); return; }
       cls = 'ratio';
     }
@@ -619,7 +626,7 @@ function settings() {
   const c = S.connection(), st = S.state;
   const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   return `
-  <section class="card"><h3>${esc(t('preferences'))}</h3>
+  <section class="card settings-card"><h3>${esc(t('preferences'))}</h3>
     <div class="row gap wrap">
       <label class="grow">${esc(t('language'))}<select data-in="lang"><option value="en"${L() === 'en' ? ' selected' : ''}>English</option><option value="vi"${L() === 'vi' ? ' selected' : ''}>Tiếng Việt</option></select></label>
       <label class="grow">${esc(t('units'))}<select data-in="unitsSel"><option value="us"${units() === 'us' ? ' selected' : ''}>US (oz, cup, °F)</option><option value="metric"${units() === 'metric' ? ' selected' : ''}>${esc(t('metric'))} (g, mL, °C)</option></select></label>
@@ -629,7 +636,7 @@ function settings() {
       <label class="grow">${esc(t('your_name'))}<input data-in="name" value="${esc(S.prefs.get('name', ''))}" maxlength="40" placeholder="${esc(t('name_ph'))}"></label>
     </div>
   </section>
-  <section class="card"><h3>${esc(t('family'))}</h3>
+  <section class="card settings-card family-card"><h3>${esc(t('family'))}</h3>
     ${c ? `<p>${esc(t('connected'))} · <span class="hint">${st.syncedAt ? esc(t('last_sync', { t: new Date(st.syncedAt).toLocaleString(L()) })) : ''}${S.pending() ? ' · ' + esc(t('sync_pending', { n: S.pending() })) : ''}</span></p>
       ${st.status === 'error' ? `<p class="err">${esc(t('sync_error', { e: st.error }))}</p>` : ''}
       <div class="qr" id="qr" aria-label="${esc(t('qr_label'))}"></div>
@@ -649,13 +656,13 @@ function settings() {
         <label>${esc(t('secret_key'))}<input id="execKey" autocomplete="off"></label>
         <button class="btn" data-act="connect-owner">${esc(t('connect'))}</button></details>`}
   </section>
-  <section class="card"><h3>${esc(t('locations'))}</h3>
+  <section class="card settings-card"><h3>${esc(t('locations'))}</h3>
     ${locs().map(l => `<div class="row gap"><input data-loc="${esc(l.id)}" value="${esc(l.name)}" class="grow" aria-label="${esc(t('location'))}" maxlength="40">
       <select data-lockind="${esc(l.id)}" aria-label="${esc(t('kind'))}">${['fridge', 'freezer', 'pantry', 'other'].map(k => `<option value="${k}"${k === l.kind ? ' selected' : ''}>${esc(t('kind_' + k))}</option>`).join('')}</select>
       <button class="icon-btn" data-act="loc-del" data-v="${esc(l.id)}" aria-label="${esc(t('delete'))}">✕</button></div>`).join('')}
     <button class="btn ghost" data-act="loc-add">+ ${esc(t('add_location'))}</button>
   </section>
-  <section class="card"><h3>${esc(t('app'))}</h3>
+  <section class="card settings-card"><h3>${esc(t('app'))}</h3>
     ${installEvt ? `<button class="btn" data-act="install">${esc(t('install'))}</button>` : standalone() ? `<p class="hint">${esc(t('installed'))}</p>` : `<p class="hint">${esc(ios ? t('ios_add') : t('install_hint'))}</p>`}
     <p><a href="#/safety">${esc(t('food_safety'))} →</a></p>
     <p><a href="test.html">${esc(t('self_test'))} →</a></p>

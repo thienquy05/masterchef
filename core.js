@@ -60,9 +60,12 @@ export function density(name) {
 }
 
 // ---------- classification ----------
+const CURE_WORDS = ['curing salt', 'cure', 'prague powder', 'pink curing salt', 'insta cure', 'instacure', 'nitrite', 'muoi diem'];
+/** Curing salt (sodium nitrite): must be weighed in grams and scaled exactly. */
+export const isCure = name => hasAny(norm(name), CURE_WORDS);
 // First match wins. Normalised (accent-free) words so "nuoc mam" and "nước mắm" both match.
 const RULES = [
-  ['ratio', ['curing salt', 'cure', 'prague powder', 'pink salt', 'nitrite', 'muoi diem']],
+  ['ratio', CURE_WORDS],
   ['normal', ['bell pepper', 'bell peppers', 'ot chuong', 'yeast', 'men no', 'men', 'eggplant', 'eggplants', 'egg noodle', 'egg noodles',
     'egg roll', 'egg rolls', 'egg roll wrappers', 'mi trung', 'ca hoi', 'salmon', 'coconut water', 'nuoc dua']],
   ['fixed', ['bay leaf', 'bay leaves', 'la nguyet que', 'cinnamon stick', 'cinnamon sticks', 'garnish', 'for garnish',
@@ -155,7 +158,8 @@ export function snap(x, fr, up = false) {
   return w + best;
 }
 export function fracStr(v) {
-  const w = Math.floor(v + 1e-9), g = glyph(Math.round((v - w) * 1e6) / 1e6);
+  const w = Math.floor(v + 1e-9), fr = Math.round((v - w) * 1e6) / 1e6, g = glyph(fr);
+  if (fr > 1e-6 && !g) return String(Math.round(v * 1000) / 1000);   // no kitchen glyph: keep the exact value
   return w ? (g ? w + g : String(w)) : (g || '0');
 }
 const num = (v, lang, digits = 2) => new Intl.NumberFormat(lang || 'en', { maximumFractionDigits: digits }).format(v);
