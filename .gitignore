@@ -1,0 +1,7 @@
+.venv/
+ruvector.db
+.claude-flow/
+.playwright-mcp/
+__pycache__/
+.swarm/
+agentdb.rvf*
